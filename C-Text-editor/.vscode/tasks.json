@@ -1,0 +1,51 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build",
+            "command": "g++",
+            "args": [
+                "${workspaceFolder}\\src\\*.cpp",
+                "${workspaceFolder}\\src\\out_code\\stb_image\\stb_image.cpp",
+                "${workspaceFolder}/src/out_code/Imgui/*.cpp",
+                "${workspaceFolder}/src/test/*.cpp",
+                "${workspaceFolder}/src/app/TextEditor/*.cpp",
+                "${workspaceFolder}/src/app/*.cpp",
+                "${workspaceFolder}/src/app/Layer/*.cpp",
+                "-g",
+                "-I${workspaceFolder}/dependences/GLFW",
+                "-I${workspaceFolder}/dependences/GLEW/include",
+                "-L${workspaceFolder}/dependences/GLFW/lib-vc2019",
+                "-L${workspaceFolder}/dependences/GLEW/lib/Release/Win32",
+                "-I${workspaceFolder}/src/out_code/glm",
+                "-I${workspaceFolder}/src/out_code/Imgui",
+                "-I${workspaceFolder}/src/out_code",
+                "-lopengl32",
+                "-lglew32",
+                "-lglfw3dll",
+                "-o",
+                "${workspaceFolder}\\bin\\${workspaceFolderBasename}",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "run",
+            "command": "cd ${workspaceFolder}\\bin && ${workspaceFolderBasename}.exe",
+            "dependsOn": [
+                "build"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}
