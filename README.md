@@ -1,6 +1,6 @@
 # TextEditor
 
-Api: OpenGl, glfw, Dear ImGui
+Api: OpenGl, glfw, glm, Dear ImGui
 Ngôn ngữ: C++
 
 - Cần làm: 
