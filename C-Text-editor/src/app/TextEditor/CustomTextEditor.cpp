@@ -4,6 +4,8 @@
 #include <math.h>
 #include <cmath>
 #include <chrono>
+
+#include <imgui_internal.h>
 namespace App
 {
     CustomTextEditor::CustomTextEditor() : Layer("Custom Txt")
@@ -26,6 +28,12 @@ namespace App
             count++;
         }
         return (count - 1);
+    }
+
+    CustomTextEditor::Line &CustomTextEditor::InsertLine(int line)
+    {
+        auto &result = *mLines.emplace(mLines.begin() + line, Line());
+        return result;
     }
 
     void CustomTextEditor::OnRender(GLFWwindow *window)
@@ -69,7 +77,8 @@ namespace App
         auto lineNo = (int)std::floor(scrollY / charAdvance.y);
         auto globalLineMax = (int)mLines.size();
         auto lineMax = std::max(0, std::min((int)mLines.size() - 1, lineNo + (int)floor((scrollY + contentSize.y) / charAdvance.y)));
-
+        ImVec2 cursor_offset;
+        ImGuiIO &io = ImGui::GetIO();
         if (!mLines.empty())
         {
             float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
@@ -81,17 +90,20 @@ namespace App
                 int columnNo = 0;
                 Coord lineStart(0, lineNo);
                 Coord lineEnd(line.size(), lineNo);
+                const ImVec2 draw_scroll = ImVec2(scrollX, 0.0f);
 
-                // // draw cursor khó quá tính sau
-                // if (ImGui::IsWindowFocused())
-                // {
-                //     auto timeEnd = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                //     auto elapsed = timeEnd - mStartTime;
-                //     if (elapsed > 400)
-                //     {
-                //         int index = GetTextIndex(state.mCursorPosition);
-                //     }
-                // }
+                // draw cursor khó quá tính sau
+                if (ImGui::IsWindowFocused())
+                {
+                    blink += io.DeltaTime;
+                    bool cursor_is_visible = (!io.ConfigInputTextCursorBlink) || (blink <= 0.0f) || fmodf(blink, 1.20f) <= 0.80f;
+                    if (cursor_is_visible)
+                    {
+                        ImVec2 Pos((float)lineEnd.mColumn, (float)lineEnd.mColumn);
+                        ImRect cursor;
+                        drawList->AddLine(cursor.Min, cursor.GetBL(), ImGui::GetColorU32(ImGuiCol_Text));
+                    }
+                }
 
                 //Render Text
                 ImVec2 bufferOffset;
@@ -122,7 +134,7 @@ namespace App
         EventDispatcher dispatch(event);
         dispatch.Dispatch<KeyPressEvent>([&](KeyPressEvent e) {
             // std::cout << e.getKeyCode() << std::endl;
-            std::cout << "KeyPressEvent: " << glfwGetKeyScancode(e.getKeyCode()) << std::endl;
+            std::cout << "KeyPressEvent: " << e.getKeyCode() << std::endl;
 
             int cline = state.mCursorPosition.mLine;
             int column = mLines.empty() ? 0 : std::min(column, GetLastCol(cline));
@@ -131,24 +143,29 @@ namespace App
 
             int i = 0;
             char buf[7];
+            auto &line = mLines[coord.mLine];
 
-            if (e.getKeyCode() == 257)
+            switch (e.getKeyCode())
             {
+            case 257:
+                //Enter
+                // InsertLine(coord.mLine + 1);
                 i = ImTextCharToUtf8(buf, 7, '\n');
-            }
-            else if (e.getKeyCode() == 258)
-            {
+                break;
+            case 258:
+                //Tab
                 i = ImTextCharToUtf8(buf, 7, '\t');
-            }
-            else
-            {
-                // const char *aChar = glfwGetKeyName(e.getKeyCode(), 0);
-                // i = ImTextCharToUtf8(buf, 7, *aChar);
+                break;
+            case 259:
+                //Backspace
+                line.pop_back();
+                break;
+            default:
+                break;
             }
 
             if (i > 0)
             {
-                auto &line = mLines[coord.mLine];
                 auto index = GetTextIndex(coord);
                 buf[i] = '\0';
                 for (char *c = buf; *c != '\0'; c++, ++index)

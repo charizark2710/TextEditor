@@ -89,6 +89,7 @@ namespace App
         int GetTextIndex(Coord c);
 
     private:
+        float blink;
         typedef std::vector<TextCustom> Line;
         typedef std::vector<Line> Lines;
         ImVec2 charAdvance;
@@ -97,5 +98,8 @@ namespace App
         Line mLine;
         uint64_t mStartTime;
         State state;
+
+    public:
+        Line &InsertLine(int line);
     };
 } // namespace App
