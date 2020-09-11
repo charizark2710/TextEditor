@@ -19,6 +19,46 @@ namespace App
             int mLine;
             Coord(int column, int line) : mColumn(column), mLine(line) {}
             Coord() : mColumn(0), mLine(0) {}
+
+            bool operator==(const Coord &o) const
+            {
+                return mLine == o.mLine &&
+                       mColumn == o.mColumn;
+            }
+
+            bool operator!=(const Coord &o) const
+            {
+                return mLine != o.mLine ||
+                       mColumn != o.mColumn;
+            }
+
+            bool operator<(const Coord &o) const
+            {
+                if (mLine != o.mLine)
+                    return mLine < o.mLine;
+                return mColumn < o.mColumn;
+            }
+
+            bool operator>(const Coord &o) const
+            {
+                if (mLine != o.mLine)
+                    return mLine > o.mLine;
+                return mColumn > o.mColumn;
+            }
+
+            bool operator<=(const Coord &o) const
+            {
+                if (mLine != o.mLine)
+                    return mLine < o.mLine;
+                return mColumn <= o.mColumn;
+            }
+
+            bool operator>=(const Coord &o) const
+            {
+                if (mLine != o.mLine)
+                    return mLine > o.mLine;
+                return mColumn >= o.mColumn;
+            }
         };
 
         struct TextCustom
@@ -87,6 +127,7 @@ namespace App
         void SetUp();
         int GetLastCol(int aline);
         int GetTextIndex(Coord c);
+        void SetCursorPosition(Coord c);
 
     private:
         float blink;

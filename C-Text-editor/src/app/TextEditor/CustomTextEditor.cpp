@@ -10,7 +10,6 @@ namespace App
 {
     CustomTextEditor::CustomTextEditor() : Layer("Custom Txt")
     {
-        mLines.push_back(Line());
     }
 
     int CustomTextEditor::GetLastCol(int aline)
@@ -28,6 +27,14 @@ namespace App
             count++;
         }
         return (count - 1);
+    }
+
+    void CustomTextEditor::SetCursorPosition(Coord c)
+    {
+        if (c != state.mCursorPosition)
+        {
+            state.mCursorPosition = c;
+        }
     }
 
     CustomTextEditor::Line &CustomTextEditor::InsertLine(int line)
@@ -93,6 +100,7 @@ namespace App
                 const ImVec2 draw_scroll = ImVec2(scrollX, 0.0f);
 
                 // draw cursor khó quá tính sau
+                Coord currentCur = state.mCursorPosition;
                 if (ImGui::IsWindowFocused())
                 {
                     blink += io.DeltaTime;
@@ -149,12 +157,15 @@ namespace App
             {
             case 257:
                 //Enter
-                // InsertLine(coord.mLine + 1);
-                i = ImTextCharToUtf8(buf, 7, '\n');
+                InsertLine(coord.mLine + 1);
+                // i = ImTextCharToUtf8(buf, 7, '\n');
+                state.mCursorPosition.mColumn = 0;
+                state.mCursorPosition.mLine++;
                 break;
             case 258:
                 //Tab
                 i = ImTextCharToUtf8(buf, 7, '\t');
+                state.mCursorPosition.mColumn += 4;
                 break;
             case 259:
                 //Backspace
@@ -198,6 +209,7 @@ namespace App
                 {
                     line.emplace(line.begin() + index, TextCustom(4289374890, *c));
                 }
+                state.mCursorPosition.mColumn++;
             }
             return false;
         });
@@ -208,6 +220,7 @@ namespace App
         m_window = &Window::Get();
         mLines.push_back(Line());
     }
+    
     void CustomTextEditor::OnDetatch() {}
 
 } // namespace App
