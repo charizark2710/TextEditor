@@ -127,7 +127,9 @@ namespace App
         void SetUp();
         int GetLastCol(int aline);
         int GetTextIndex(Coord c);
-        void SetCursorPosition(Coord c);
+        //Get the current cursor when click
+        void SetCursorPosition(Coord &c);
+        Coord GetCurrentCursor(Coord c);
 
     private:
         float blink;
@@ -139,8 +141,12 @@ namespace App
         Line mLine;
         uint64_t mStartTime;
         State state;
+        Coord cursor;
+        float cursorX = 0.0f;
+        float cursorY = 0.0f;
 
     public:
         Line &InsertLine(int line);
+        void InsertTab(int line);
     };
 } // namespace App

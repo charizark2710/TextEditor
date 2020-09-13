@@ -29,12 +29,21 @@ namespace App
         return (count - 1);
     }
 
-    void CustomTextEditor::SetCursorPosition(Coord c)
+    void CustomTextEditor::SetCursorPosition(Coord &c)
     {
         if (c != state.mCursorPosition)
         {
             state.mCursorPosition = c;
+            c = GetCurrentCursor(c);
         }
+    }
+
+    CustomTextEditor::Coord CustomTextEditor::GetCurrentCursor(Coord c)
+    {
+        auto line = c.mLine;
+        auto column = c.mColumn;
+        Coord coord(line + cursorX, column + cursorY);
+        return coord;
     }
 
     CustomTextEditor::Line &CustomTextEditor::InsertLine(int line)
@@ -43,15 +52,30 @@ namespace App
         return result;
     }
 
+    void CustomTextEditor::InsertTab(int column)
+    {
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column, TextCustom(4289374890, ' '));
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 1, TextCustom(4289374890, ' '));
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 2, TextCustom(4289374890, ' '));
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 3, TextCustom(4289374890, ' '));
+    }
+
     void CustomTextEditor::OnRender(GLFWwindow *window)
     {
         ImGui::Begin((this->GetName()).c_str());
         ImGui::BeginChild("XXX");
+
         ImGuiIO &io = ImGui::GetIO();
+        io.MouseClickedPos;
         if (ImGui::IsWindowFocused())
         {
             if (ImGui::IsWindowHovered())
+            {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_TextInput);
+                ImVec2 origin = io.MousePos;
+                cursorX = origin.x;
+                cursorY = origin.y;
+            }
 
             m_window->SetEventCallback([&](App::Event &event) {
                 // std::cout << event.toString() << std::endl;
@@ -158,14 +182,12 @@ namespace App
             case 257:
                 //Enter
                 InsertLine(coord.mLine + 1);
-                // i = ImTextCharToUtf8(buf, 7, '\n');
                 state.mCursorPosition.mColumn = 0;
                 state.mCursorPosition.mLine++;
                 break;
             case 258:
                 //Tab
-                i = ImTextCharToUtf8(buf, 7, '\t');
-                state.mCursorPosition.mColumn += 4;
+                InsertTab(coord.mColumn);
                 break;
             case 259:
                 //Backspace
@@ -175,15 +197,15 @@ namespace App
                 break;
             }
 
-            if (i > 0)
-            {
-                auto index = GetTextIndex(coord);
-                buf[i] = '\0';
-                for (char *c = buf; *c != '\0'; c++, ++index)
-                {
-                    line.emplace(line.begin() + index, TextCustom(4289374890, *c));
-                }
-            }
+            // if (i > 0)
+            // {
+            //     auto index = GetTextIndex(coord);
+            //     buf[i] = '\0';
+            //     for (char *c = buf; *c != '\0'; c++, ++index)
+            //     {
+            //         line.emplace(line.begin() + index, TextCustom(4289374890, *c));
+            //     }
+            // }
             return false;
         });
 
@@ -213,6 +235,19 @@ namespace App
             }
             return false;
         });
+
+        //Nhấn chuột trái
+        dispatch.Dispatch<MouseButtonPressedEvent>([&](MouseButtonPressedEvent e) {
+            // SetCursorPosition(cursor);
+            std::cout << cursorX << " : " << cursorY << std::endl;
+            return false;
+        });
+
+        //Di Chuột
+        //Chưa biết nên làm gì vì đống dispatch hoạt động trên cả chương trình thay vì trên cửa sổ imgui hiện tại
+        dispatch.Dispatch<MouseMovedEvent>([&](MouseMovedEvent e) {
+            return false;
+        });
     }
 
     void CustomTextEditor::OnAttatch()
@@ -220,7 +255,7 @@ namespace App
         m_window = &Window::Get();
         mLines.push_back(Line());
     }
-    
+
     void CustomTextEditor::OnDetatch() {}
 
 } // namespace App
