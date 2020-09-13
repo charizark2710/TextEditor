@@ -34,15 +34,42 @@ namespace App
         if (c != state.mCursorPosition)
         {
             state.mCursorPosition = c;
-            c = GetCurrentCursor(c);
         }
+        c = GetCurrentCursor(c);
     }
 
+    //Khó vl
     CustomTextEditor::Coord CustomTextEditor::GetCurrentCursor(Coord c)
     {
         auto line = c.mLine;
         auto column = c.mColumn;
-        Coord coord(line + cursorX, column + cursorY);
+        ImVec2 currentCursor(column + textScreenPos.x, line + textScreenPos.y);
+        cursor = currentCursor;
+        float X = cursorX;
+        float Y = cursorY;
+
+        if (X > currentCursor.x)
+        {
+            X = currentCursor.x;
+        }
+        if (Y > currentCursor.y)
+        {
+            Y = currentCursor.y;
+        }
+
+        ImVec2 mouseCursor(X, Y);
+
+        Coord coord(mouseCursor.x - currentCursor.x, currentCursor.y - mouseCursor.y);
+
+        if (coord.mColumn <= 0)
+        {
+            coord.mColumn = column;
+        }
+        if (coord.mLine <= 0)
+        {
+            coord.mLine = line;
+        }
+
         return coord;
     }
 
@@ -116,26 +143,12 @@ namespace App
             while (lineNo <= lineMax)
             {
                 ImVec2 lineStartScreenPos = ImVec2(cursorScreenPos.x, cursorScreenPos.y + lineNo * charAdvance.y);
-                ImVec2 textScreenPos = ImVec2(lineStartScreenPos.x, lineStartScreenPos.y);
+                textScreenPos = ImVec2(lineStartScreenPos.x, lineStartScreenPos.y);
                 auto &line = mLines[lineNo];
                 int columnNo = 0;
                 Coord lineStart(0, lineNo);
                 Coord lineEnd(line.size(), lineNo);
                 const ImVec2 draw_scroll = ImVec2(scrollX, 0.0f);
-
-                // draw cursor khó quá tính sau
-                Coord currentCur = state.mCursorPosition;
-                if (ImGui::IsWindowFocused())
-                {
-                    blink += io.DeltaTime;
-                    bool cursor_is_visible = (!io.ConfigInputTextCursorBlink) || (blink <= 0.0f) || fmodf(blink, 1.20f) <= 0.80f;
-                    if (cursor_is_visible)
-                    {
-                        ImVec2 Pos((float)lineEnd.mColumn, (float)lineEnd.mColumn);
-                        ImRect cursor;
-                        drawList->AddLine(cursor.Min, cursor.GetBL(), ImGui::GetColorU32(ImGuiCol_Text));
-                    }
-                }
 
                 //Render Text
                 ImVec2 bufferOffset;
@@ -152,6 +165,21 @@ namespace App
                     mLineBuffer.clear();
                 }
                 lineNo++;
+            }
+
+            // draw cursor khó quá tính sau
+            Coord currentCur = state.mCursorPosition;
+            if (ImGui::IsWindowFocused())
+            {
+                blink += io.DeltaTime;
+                bool cursor_is_visible = (!io.ConfigInputTextCursorBlink) || (blink <= 0.0f) || fmodf(blink, 1.20f) <= 0.80f;
+                if (cursor_is_visible)
+                {
+                    ImVec2 cstart(textScreenPos.x + (currentCur.mColumn * spaceSize), textScreenPos.y);
+                    ImVec2 cend(cstart.x, cstart.y + ImGui::GetFontSize());
+                    ImRect rectCursor(cstart, cend);
+                    drawList->AddLine(rectCursor.Min, rectCursor.GetBL(), ImGui::GetColorU32(ImGuiCol_Text));
+                }
             }
         }
     }
@@ -188,6 +216,7 @@ namespace App
             case 258:
                 //Tab
                 InsertTab(coord.mColumn);
+                state.mCursorPosition.mColumn += 4;
                 break;
             case 259:
                 //Backspace
@@ -238,7 +267,7 @@ namespace App
 
         //Nhấn chuột trái
         dispatch.Dispatch<MouseButtonPressedEvent>([&](MouseButtonPressedEvent e) {
-            // SetCursorPosition(cursor);
+            SetCursorPosition(state.mCursorPosition);
             std::cout << cursorX << " : " << cursorY << std::endl;
             return false;
         });

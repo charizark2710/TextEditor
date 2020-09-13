@@ -127,7 +127,8 @@ namespace App
         void SetUp();
         int GetLastCol(int aline);
         int GetTextIndex(Coord c);
-        //Get the current cursor when click
+
+        //Vị trí của con trỏ nhưng với tọa độ đầy đủ
         void SetCursorPosition(Coord &c);
         Coord GetCurrentCursor(Coord c);
 
@@ -141,9 +142,10 @@ namespace App
         Line mLine;
         uint64_t mStartTime;
         State state;
-        Coord cursor;
+        ImVec2 cursor;
         float cursorX = 0.0f;
         float cursorY = 0.0f;
+        ImVec2 textScreenPos;
 
     public:
         Line &InsertLine(int line);
