@@ -193,16 +193,11 @@ namespace App
         //Xử lý đầu vào đặc biệt
         EventDispatcher dispatch(event);
         dispatch.Dispatch<KeyPressEvent>([&](KeyPressEvent e) {
-            // std::cout << e.getKeyCode() << std::endl;
-            std::cout << "KeyPressEvent: " << e.getKeyCode() << std::endl;
-
             int cline = state.mCursorPosition.mLine;
             int column = mLines.empty() ? 0 : std::min(column, GetLastCol(cline));
 
             Coord coord(column, cline);
 
-            int i = 0;
-            char buf[7];
             auto &line = mLines[coord.mLine];
 
             switch (e.getKeyCode())
@@ -220,21 +215,20 @@ namespace App
                 break;
             case 259:
                 //Backspace
-                line.pop_back();
+                if (coord.mLine > 0 && coord.mColumn == 0)
+                {
+                    state.mCursorPosition.mColumn = mLines[--state.mCursorPosition.mLine].size();
+                    mLines.pop_back();
+                }
+                if (!line.empty())
+                {
+                    line.pop_back();
+                    state.mCursorPosition.mColumn--;
+                }
                 break;
             default:
                 break;
             }
-
-            // if (i > 0)
-            // {
-            //     auto index = GetTextIndex(coord);
-            //     buf[i] = '\0';
-            //     for (char *c = buf; *c != '\0'; c++, ++index)
-            //     {
-            //         line.emplace(line.begin() + index, TextCustom(4289374890, *c));
-            //     }
-            // }
             return false;
         });
 
