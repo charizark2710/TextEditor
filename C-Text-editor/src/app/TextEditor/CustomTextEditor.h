@@ -127,10 +127,11 @@ namespace App
         void SetUp();
         int GetLastCol(int aline);
         int GetTextIndex(Coord c);
-
         //Vị trí của con trỏ nhưng với tọa độ đầy đủ
         void SetCursorPosition(Coord &c);
         Coord GetCurrentCursor(Coord c);
+        float CalculateCurrentLine();
+        float CalculateCurrentIndex();
 
     private:
         float blink;
@@ -145,7 +146,9 @@ namespace App
         ImVec2 cursor;
         float cursorX = 0.0f;
         float cursorY = 0.0f;
-        ImVec2 textScreenPos;
+        ImVec2 CursorPos;
+        //Vị trí của cửa sổ
+        ImVec2 cursorScreenPos;
 
     public:
         Line &InsertLine(int line);

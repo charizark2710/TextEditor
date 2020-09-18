@@ -35,7 +35,17 @@ namespace App
         {
             state.mCursorPosition = c;
         }
-        c = GetCurrentCursor(c);
+        GetCurrentCursor(c);
+    }
+
+    float CustomTextEditor::CalculateCurrentLine()
+    {
+        float firstLine = cursorScreenPos.y;
+        float lastLine = CursorPos.y;
+        float currentLine = (lastLine - cursorY) / charAdvance.y;
+        float maxLine = (lastLine - firstLine) / charAdvance.y;
+        float result = std::floor(maxLine - currentLine);
+        return result;
     }
 
     //Khó vl
@@ -43,23 +53,28 @@ namespace App
     {
         auto line = c.mLine;
         auto column = c.mColumn;
-        ImVec2 currentCursor(column + textScreenPos.x, line + textScreenPos.y);
-        cursor = currentCursor;
-        float X = cursorX;
-        float Y = cursorY;
 
-        if (X > currentCursor.x)
+        float X = cursorX;
+        float Y = CalculateCurrentLine();;
+
+        Coord coord;
+        if (X > cursor.x || Y < cursor.y)
         {
-            X = currentCursor.x;
-        }
-        if (Y > currentCursor.y)
-        {
-            Y = currentCursor.y;
+
+            if (X > cursor.x)
+            {
+                coord.mColumn = X;
+            }
+            if (Y < cursor.y)
+            {
+                coord.mLine = Y;
+            }
+            return coord;
         }
 
         ImVec2 mouseCursor(X, Y);
 
-        Coord coord(mouseCursor.x - currentCursor.x, currentCursor.y - mouseCursor.y);
+        coord = {std::floor(mouseCursor.x - cursor.x), std::floor(cursor.y - mouseCursor.y)};
 
         if (coord.mColumn <= 0)
         {
@@ -91,7 +106,7 @@ namespace App
     {
         ImGui::Begin((this->GetName()).c_str());
         ImGui::BeginChild("XXX");
-
+        cursorScreenPos = ImGui::GetCursorScreenPos();
         ImGuiIO &io = ImGui::GetIO();
         io.MouseClickedPos;
         if (ImGui::IsWindowFocused())
@@ -128,8 +143,6 @@ namespace App
         charAdvance = ImVec2(fontSize, ImGui::GetTextLineHeightWithSpacing() * 1.0f);
         auto contentSize = ImGui::GetWindowContentRegionMax();
         auto drawList = ImGui::GetWindowDrawList();
-
-        ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
         auto scrollX = ImGui::GetScrollX();
         auto scrollY = ImGui::GetScrollY();
         auto lineNo = (int)std::floor(scrollY / charAdvance.y);
@@ -137,6 +150,7 @@ namespace App
         auto lineMax = std::max(0, std::min((int)mLines.size() - 1, lineNo + (int)floor((scrollY + contentSize.y) / charAdvance.y)));
         ImVec2 cursor_offset;
         ImGuiIO &io = ImGui::GetIO();
+        ImVec2 textScreenPos;
         if (!mLines.empty())
         {
             float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
@@ -166,7 +180,7 @@ namespace App
                 }
                 lineNo++;
             }
-
+            CursorPos = textScreenPos;
             // draw cursor khó quá tính sau
             Coord currentCur = state.mCursorPosition;
             if (ImGui::IsWindowFocused())
@@ -175,10 +189,11 @@ namespace App
                 bool cursor_is_visible = (!io.ConfigInputTextCursorBlink) || (blink <= 0.0f) || fmodf(blink, 1.20f) <= 0.80f;
                 if (cursor_is_visible)
                 {
-                    ImVec2 cstart(textScreenPos.x + (currentCur.mColumn * spaceSize), textScreenPos.y);
+                    ImVec2 cstart(CursorPos.x + (currentCur.mColumn * spaceSize), CursorPos.y);
+                    cursor = cstart;
                     ImVec2 cend(cstart.x, cstart.y + ImGui::GetFontSize());
                     ImRect rectCursor(cstart, cend);
-                    drawList->AddLine(rectCursor.Min, rectCursor.GetBL(), ImGui::GetColorU32(ImGuiCol_Text));
+                    drawList->AddLine(rectCursor.Min, rectCursor.Max, ImGui::GetColorU32(ImGuiCol_Text));
                 }
             }
         }
