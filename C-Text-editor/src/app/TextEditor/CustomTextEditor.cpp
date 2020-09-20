@@ -35,56 +35,46 @@ namespace App
         {
             state.mCursorPosition = c;
         }
-        GetCurrentCursor(c);
+        c = GetCurrentCursor();
     }
 
-    float CustomTextEditor::CalculateCurrentLine()
+    //Lấy số dòng mà con trỏ đang chỉ tới
+    int CustomTextEditor::CalculateCurrentLine()
     {
         float firstLine = cursorScreenPos.y;
         float lastLine = CursorPos.y;
-        float currentLine = (lastLine - cursorY) / charAdvance.y;
+        float y = cursorY > lastLine ? lastLine : cursorY;
+        float currentLine = (lastLine - y) / charAdvance.y;
         float maxLine = (lastLine - firstLine) / charAdvance.y;
-        float result = std::floor(maxLine - currentLine);
+        float result = std::round(maxLine - currentLine);
         return result;
     }
 
-    //Khó vl
-    CustomTextEditor::Coord CustomTextEditor::GetCurrentCursor(Coord c)
+    //Lấy số cột mà con trỏ đang chỉ tới
+    int CustomTextEditor::CalculateCurrentIndex(int line)
     {
-        auto line = c.mLine;
-        auto column = c.mColumn;
+        Line lineContent = mLines[line];
+        float lineStart = cursorScreenPos.x;
+        float lineEnd = cursorScreenPos.x + (charAdvance.x * lineContent.size());
 
-        float X = cursorX;
-        float Y = CalculateCurrentLine();;
+        float x = cursorX > lineEnd ? lineEnd : cursorX;
+        float currentIndex = (lineEnd - x) / charAdvance.x;
+        float thisLine = (lineEnd - lineStart) / charAdvance.x;
+        float result = std::round(thisLine - currentIndex);
+        return result;
+    }
 
+    //Lụm số dòng và số cột khi có click chuột
+    CustomTextEditor::Coord CustomTextEditor::GetCurrentCursor()
+    {
         Coord coord;
-        if (X > cursor.x || Y < cursor.y)
+
+        if (isClicked)
         {
-
-            if (X > cursor.x)
-            {
-                coord.mColumn = X;
-            }
-            if (Y < cursor.y)
-            {
-                coord.mLine = Y;
-            }
-            return coord;
+            int Y = CalculateCurrentLine();
+            int X = CalculateCurrentIndex(Y);
+            coord = {X, Y};
         }
-
-        ImVec2 mouseCursor(X, Y);
-
-        coord = {std::floor(mouseCursor.x - cursor.x), std::floor(cursor.y - mouseCursor.y)};
-
-        if (coord.mColumn <= 0)
-        {
-            coord.mColumn = column;
-        }
-        if (coord.mLine <= 0)
-        {
-            coord.mLine = line;
-        }
-
         return coord;
     }
 
@@ -96,10 +86,10 @@ namespace App
 
     void CustomTextEditor::InsertTab(int column)
     {
-        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column, TextCustom(4289374890, ' '));
-        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 1, TextCustom(4289374890, ' '));
-        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 2, TextCustom(4289374890, ' '));
-        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 3, TextCustom(4289374890, ' '));
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), ' '));
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 1, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), ' '));
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 2, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), ' '));
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 3, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), ' '));
     }
 
     void CustomTextEditor::OnRender(GLFWwindow *window)
@@ -135,6 +125,7 @@ namespace App
 
         ImGui::EndChild();
         ImGui::End();
+        isClicked = false;
     }
 
     void CustomTextEditor::SetUp()
@@ -175,13 +166,13 @@ namespace App
                 if (!mLineBuffer.empty())
                 {
                     const ImVec2 newOffset(textScreenPos.x + bufferOffset.x, textScreenPos.y + bufferOffset.y);
-                    drawList->AddText(newOffset, 4289374890, mLineBuffer.c_str());
+                    drawList->AddText(newOffset, ImGui::GetColorU32(ImGuiCol_Text), mLineBuffer.c_str());
                     mLineBuffer.clear();
                 }
                 lineNo++;
             }
             CursorPos = textScreenPos;
-            // draw cursor khó quá tính sau
+            // draw cursor
             Coord currentCur = state.mCursorPosition;
             if (ImGui::IsWindowFocused())
             {
@@ -267,7 +258,7 @@ namespace App
                 buf[i] = '\0';
                 for (char *c = buf; *c != '\0'; c++, ++index)
                 {
-                    line.emplace(line.begin() + index, TextCustom(4289374890, *c));
+                    line.emplace(line.begin() + index, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), *c));
                 }
                 state.mCursorPosition.mColumn++;
             }
@@ -276,6 +267,7 @@ namespace App
 
         //Nhấn chuột trái
         dispatch.Dispatch<MouseButtonPressedEvent>([&](MouseButtonPressedEvent e) {
+            isClicked = true;
             SetCursorPosition(state.mCursorPosition);
             std::cout << cursorX << " : " << cursorY << std::endl;
             return false;

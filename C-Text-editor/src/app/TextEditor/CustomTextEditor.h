@@ -129,11 +129,12 @@ namespace App
         int GetTextIndex(Coord c);
         //Vị trí của con trỏ nhưng với tọa độ đầy đủ
         void SetCursorPosition(Coord &c);
-        Coord GetCurrentCursor(Coord c);
-        float CalculateCurrentLine();
-        float CalculateCurrentIndex();
+        Coord GetCurrentCursor();
+        int CalculateCurrentLine();
+        int CalculateCurrentIndex(int line);
 
     private:
+        bool isClicked = false;
         float blink;
         typedef std::vector<TextCustom> Line;
         typedef std::vector<Line> Lines;
