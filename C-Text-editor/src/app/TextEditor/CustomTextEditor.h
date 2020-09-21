@@ -125,7 +125,6 @@ namespace App
 
         //Set Text, Cursor, Size, .....
         void SetUp();
-        int GetLastCol(int aline);
         int GetTextIndex(Coord c);
         //Vị trí của con trỏ nhưng với tọa độ đầy đủ
         void SetCursorPosition(Coord &c);

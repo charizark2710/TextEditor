@@ -12,12 +12,6 @@ namespace App
     {
     }
 
-    int CustomTextEditor::GetLastCol(int aline)
-    {
-        auto &line = mLines[aline];
-        return line.size();
-    }
-
     int CustomTextEditor::GetTextIndex(Coord c)
     {
         auto &line = mLines[c.mLine];
@@ -180,7 +174,7 @@ namespace App
                 bool cursor_is_visible = (!io.ConfigInputTextCursorBlink) || (blink <= 0.0f) || fmodf(blink, 1.20f) <= 0.80f;
                 if (cursor_is_visible)
                 {
-                    ImVec2 cstart(CursorPos.x + (currentCur.mColumn * spaceSize), CursorPos.y);
+                    ImVec2 cstart(CursorPos.x + (currentCur.mColumn * spaceSize), cursorScreenPos.y + currentCur.mLine * charAdvance.y);
                     cursor = cstart;
                     ImVec2 cend(cstart.x, cstart.y + ImGui::GetFontSize());
                     ImRect rectCursor(cstart, cend);
@@ -200,7 +194,7 @@ namespace App
         EventDispatcher dispatch(event);
         dispatch.Dispatch<KeyPressEvent>([&](KeyPressEvent e) {
             int cline = state.mCursorPosition.mLine;
-            int column = mLines.empty() ? 0 : std::min(column, GetLastCol(cline));
+            int column = mLines.empty() ? 0 : state.mCursorPosition.mColumn;
 
             Coord coord(column, cline);
 
@@ -241,7 +235,7 @@ namespace App
         //Xử lý các chữ cái thông thường kể cả utf-8 (utf-8 khó quá tính sau)
         dispatch.Dispatch<KeyTypedEvent>([&](KeyTypedEvent e) {
             int cline = state.mCursorPosition.mLine;
-            int column = mLines.empty() ? 0 : std::min(column, GetLastCol(cline));
+            int column = mLines.empty() ? 0 : state.mCursorPosition.mColumn;
 
             Coord coord(column, cline);
 
