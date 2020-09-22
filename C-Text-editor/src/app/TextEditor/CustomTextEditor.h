@@ -126,6 +126,7 @@ namespace App
         //Set Text, Cursor, Size, .....
         void SetUp();
         int GetTextIndex(Coord c);
+        void setSelection();
         //Vị trí của con trỏ nhưng với tọa độ đầy đủ
         void SetCursorPosition(Coord &c);
         Coord GetCurrentCursor();
@@ -134,6 +135,7 @@ namespace App
 
     private:
         bool isClicked = false;
+        bool hasSelection = false;
         float blink;
         typedef std::vector<TextCustom> Line;
         typedef std::vector<Line> Lines;

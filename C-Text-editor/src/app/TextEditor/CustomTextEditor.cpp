@@ -4,8 +4,8 @@
 #include <math.h>
 #include <cmath>
 #include <chrono>
-
 #include <imgui_internal.h>
+
 namespace App
 {
     CustomTextEditor::CustomTextEditor() : Layer("Custom Txt")
@@ -37,7 +37,8 @@ namespace App
     {
         float firstLine = cursorScreenPos.y;
         float lastLine = CursorPos.y;
-        float y = cursorY > lastLine ? lastLine : cursorY;
+        // float y = cursorY > lastLine ? lastLine : cursorY;
+        float y = cursorY;
         float currentLine = (lastLine - y) / charAdvance.y;
         float maxLine = (lastLine - firstLine) / charAdvance.y;
         float result = std::round(maxLine - currentLine);
@@ -50,8 +51,8 @@ namespace App
         Line lineContent = mLines[line];
         float lineStart = cursorScreenPos.x;
         float lineEnd = cursorScreenPos.x + (charAdvance.x * lineContent.size());
-
-        float x = cursorX > lineEnd ? lineEnd : cursorX;
+        // float x = cursorX > lineEnd ? lineEnd : cursorX;
+        float x = cursorX;
         float currentIndex = (lineEnd - x) / charAdvance.x;
         float thisLine = (lineEnd - lineStart) / charAdvance.x;
         float result = std::round(thisLine - currentIndex);
@@ -63,13 +64,41 @@ namespace App
     {
         Coord coord;
 
-        if (isClicked)
-        {
-            int Y = CalculateCurrentLine();
-            int X = CalculateCurrentIndex(Y);
-            coord = {X, Y};
-        }
+        int Y = CalculateCurrentLine();
+
+        if (Y > mLines.size() - 1)
+            Y = mLines.size() - 1;
+
+        int X = CalculateCurrentIndex(Y);
+
+        if (X > mLines[Y].size())
+            X = mLines[Y].size();
+
+        coord = {X, Y};
         return coord;
+    }
+
+    void CustomTextEditor::setSelection()
+    {
+        //end
+        int line = CalculateCurrentLine();
+
+        if (line > mLines.size() - 1)
+        {
+            hasSelection = false;
+            return;
+        }
+
+        int column = CalculateCurrentIndex(line);
+
+        if (column > mLines[line].size())
+        {
+            hasSelection = false;
+            return;
+        }
+
+        state.mSelectionEnd = {column, line};
+        hasSelection = true;
     }
 
     CustomTextEditor::Line &CustomTextEditor::InsertLine(int line)
@@ -92,7 +121,7 @@ namespace App
         ImGui::BeginChild("XXX");
         cursorScreenPos = ImGui::GetCursorScreenPos();
         ImGuiIO &io = ImGui::GetIO();
-        io.MouseClickedPos;
+        io.ConfigWindowsMoveFromTitleBarOnly = true;
         if (ImGui::IsWindowFocused())
         {
             if (ImGui::IsWindowHovered())
@@ -119,7 +148,6 @@ namespace App
 
         ImGui::EndChild();
         ImGui::End();
-        isClicked = false;
     }
 
     void CustomTextEditor::SetUp()
@@ -136,6 +164,7 @@ namespace App
         ImVec2 cursor_offset;
         ImGuiIO &io = ImGui::GetIO();
         ImVec2 textScreenPos;
+        Coord currentCur = state.mCursorPosition;
         if (!mLines.empty())
         {
             float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
@@ -148,6 +177,31 @@ namespace App
                 Coord lineStart(0, lineNo);
                 Coord lineEnd(line.size(), lineNo);
                 const ImVec2 draw_scroll = ImVec2(scrollX, 0.0f);
+
+                //draw selection
+                if (hasSelection)
+                {
+                    int start = state.mSelectionStart.mColumn;
+                    int end = state.mSelectionEnd.mColumn;
+                    ImVec2 vstart;
+                    ImVec2 vend;
+                    if (start > end)
+                    {
+                        vstart = ImVec2(CursorPos.x + (end * spaceSize), cursorScreenPos.y + state.mSelectionEnd.mLine * charAdvance.y);
+                        vend = ImVec2(CursorPos.x + (start * spaceSize), vstart.y + ImGui::GetFontSize());
+                    }
+                    else
+                    {
+                        vstart = ImVec2(CursorPos.x + (start * spaceSize), cursorScreenPos.y + state.mSelectionEnd.mLine * charAdvance.y);
+                        vend = ImVec2(CursorPos.x + (end * spaceSize), vstart.y + ImGui::GetFontSize());
+                    }
+                    drawList->AddRectFilled(vstart, vend, ImGui::GetColorU32(ImGuiCol_TextSelectedBg));
+
+                    // std::cout << vstart.x << " : " << vstart.y << std::endl
+                    //           << vend.x << " : " << vend.y << std::endl
+                    //           << std::endl;
+                    std::cout << "AAAAA " << state.mSelectionEnd.mColumn << " : " << state.mSelectionEnd.mLine << std::endl;
+                }
 
                 //Render Text
                 ImVec2 bufferOffset;
@@ -167,7 +221,6 @@ namespace App
             }
             CursorPos = textScreenPos;
             // draw cursor
-            Coord currentCur = state.mCursorPosition;
             if (ImGui::IsWindowFocused())
             {
                 blink += io.DeltaTime;
@@ -261,15 +314,30 @@ namespace App
 
         //Nhấn chuột trái
         dispatch.Dispatch<MouseButtonPressedEvent>([&](MouseButtonPressedEvent e) {
-            isClicked = true;
-            SetCursorPosition(state.mCursorPosition);
-            std::cout << cursorX << " : " << cursorY << std::endl;
+            if (e.GetMouseButton() == GLFW_MOUSE_BUTTON_LEFT)
+            {
+                hasSelection = false;
+                isClicked = true;
+                SetCursorPosition(state.mCursorPosition);
+                state.mSelectionStart.mColumn = state.mCursorPosition.mColumn;
+                state.mSelectionStart.mLine = state.mCursorPosition.mLine;
+            }
+            return false;
+        });
+
+        //Thả chuột
+        dispatch.Dispatch<MouseButtonReleasedEvent>([&](MouseButtonReleasedEvent e) {
+            isClicked = false;
             return false;
         });
 
         //Di Chuột
         //Chưa biết nên làm gì vì đống dispatch hoạt động trên cả chương trình thay vì trên cửa sổ imgui hiện tại
         dispatch.Dispatch<MouseMovedEvent>([&](MouseMovedEvent e) {
+            if (isClicked)
+            {
+                setSelection();
+            }
             return false;
         });
     }
