@@ -101,6 +101,11 @@ namespace App
         hasSelection = true;
     }
 
+    void CustomTextEditor::DeleteChar(CustomTextEditor::Line &line, int index)
+    {
+        line.erase(line.begin() + index - 1);
+    }
+
     CustomTextEditor::Line &CustomTextEditor::InsertLine(int line)
     {
         auto &result = *mLines.emplace(mLines.begin() + line, Line());
@@ -109,10 +114,10 @@ namespace App
 
     void CustomTextEditor::InsertTab(int column)
     {
-        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), ' '));
-        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 1, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), ' '));
-        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 2, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), ' '));
-        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 3, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), ' '));
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column, ImGui::GetColorU32(ImGuiCol_Text), ' ');
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 1, ImGui::GetColorU32(ImGuiCol_Text), ' ');
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 2, ImGui::GetColorU32(ImGuiCol_Text), ' ');
+        mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 3, ImGui::GetColorU32(ImGuiCol_Text), ' ');
     }
 
     void CustomTextEditor::OnRender(GLFWwindow *window)
@@ -196,11 +201,6 @@ namespace App
                         vend = ImVec2(CursorPos.x + (end * spaceSize), vstart.y + ImGui::GetFontSize());
                     }
                     drawList->AddRectFilled(vstart, vend, ImGui::GetColorU32(ImGuiCol_TextSelectedBg));
-
-                    // std::cout << vstart.x << " : " << vstart.y << std::endl
-                    //           << vend.x << " : " << vend.y << std::endl
-                    //           << std::endl;
-                    std::cout << "AAAAA " << state.mSelectionEnd.mColumn << " : " << state.mSelectionEnd.mLine << std::endl;
                 }
 
                 //Render Text
@@ -251,7 +251,10 @@ namespace App
 
             Coord coord(column, cline);
 
-            auto &line = mLines[coord.mLine];
+            auto line = &mLines[coord.mLine];
+
+            std::cout << e.getKeyCode();
+            const auto temp = *line;
 
             switch (e.getKeyCode())
             {
@@ -268,15 +271,38 @@ namespace App
                 break;
             case 259:
                 //Backspace
-                if (coord.mLine > 0 && coord.mColumn == 0)
+                if (cline > 0 && column == 0)
                 {
                     state.mCursorPosition.mColumn = mLines[--state.mCursorPosition.mLine].size();
-                    mLines.pop_back();
+
+                    if (!line->empty() && cline > 0)
+                    {
+                        mLines[cline - 1].insert(mLines[cline - 1].end(), line->begin(), line->end());
+                    }
+                    mLines.erase(mLines.begin() + cline);
+                    line->clear();
                 }
-                if (!line.empty())
+
+                else if (line != nullptr && !line->empty() && column > 0)
                 {
-                    line.pop_back();
+                    DeleteChar(*line, column);
                     state.mCursorPosition.mColumn--;
+                }
+                break;
+            case 261:
+                //delete
+                if (line != nullptr && !line->empty())
+                {
+                    if (temp[column].mtext)
+                    {
+                        DeleteChar(*line, column + 1);
+                    }
+                }
+
+                if (mLines.size() > cline && !temp[column].mtext)
+                {
+                    mLines[cline].insert(mLines[cline].end(), mLines[cline + 1].begin(), mLines[cline + 1].end());
+                    mLines.erase(mLines.begin() + cline + 1);
                 }
                 break;
             default:
@@ -305,7 +331,7 @@ namespace App
                 buf[i] = '\0';
                 for (char *c = buf; *c != '\0'; c++, ++index)
                 {
-                    line.emplace(line.begin() + index, TextCustom(ImGui::GetColorU32(ImGuiCol_Text), *c));
+                    line.emplace(line.begin() + index, ImGui::GetColorU32(ImGuiCol_Text), *c);
                 }
                 state.mCursorPosition.mColumn++;
             }

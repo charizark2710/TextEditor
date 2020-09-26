@@ -122,7 +122,6 @@ namespace App
         void OnAttatch() override;
         void OnDetatch() override;
         void OnUpdate() override;
-
         //Set Text, Cursor, Size, .....
         void SetUp();
         int GetTextIndex(Coord c);
@@ -155,5 +154,6 @@ namespace App
     public:
         Line &InsertLine(int line);
         void InsertTab(int line);
+        void DeleteChar(Line &line, int index);
     };
 } // namespace App
