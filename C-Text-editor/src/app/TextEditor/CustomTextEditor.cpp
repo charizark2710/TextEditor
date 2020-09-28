@@ -75,6 +75,7 @@ namespace App
             X = mLines[Y].size();
 
         coord = {X, Y};
+        std::cout << X << " : " << Y << std::endl;
         return coord;
     }
 
@@ -253,23 +254,32 @@ namespace App
 
             auto line = &mLines[coord.mLine];
 
-            std::cout << e.getKeyCode();
             const auto temp = *line;
 
             switch (e.getKeyCode())
             {
             case 257:
+            {
                 //Enter
-                InsertLine(coord.mLine + 1);
+                Line &newLine = InsertLine(coord.mLine + 1);
+                if (temp[column].mtext)
+                {
+                    newLine.insert(newLine.begin(), temp.begin() + column, temp.end());
+                    mLines[coord.mLine].erase(mLines[coord.mLine].begin() + column, mLines[coord.mLine].end());
+                }
                 state.mCursorPosition.mColumn = 0;
                 state.mCursorPosition.mLine++;
                 break;
+            }
             case 258:
+            {
                 //Tab
                 InsertTab(coord.mColumn);
                 state.mCursorPosition.mColumn += 4;
                 break;
+            }
             case 259:
+            {
                 //Backspace
                 if (cline > 0 && column == 0)
                 {
@@ -280,7 +290,7 @@ namespace App
                         mLines[cline - 1].insert(mLines[cline - 1].end(), line->begin(), line->end());
                     }
                     mLines.erase(mLines.begin() + cline);
-                    line->clear();
+                    // line->clear();
                 }
 
                 else if (line != nullptr && !line->empty() && column > 0)
@@ -289,7 +299,9 @@ namespace App
                     state.mCursorPosition.mColumn--;
                 }
                 break;
+            }
             case 261:
+            {
                 //delete
                 if (line != nullptr && !line->empty())
                 {
@@ -299,12 +311,13 @@ namespace App
                     }
                 }
 
-                if (mLines.size() > cline && !temp[column].mtext)
+                if (mLines.size() - 1 > cline && !temp[column].mtext)
                 {
                     mLines[cline].insert(mLines[cline].end(), mLines[cline + 1].begin(), mLines[cline + 1].end());
                     mLines.erase(mLines.begin() + cline + 1);
                 }
                 break;
+            }
             default:
                 break;
             }
