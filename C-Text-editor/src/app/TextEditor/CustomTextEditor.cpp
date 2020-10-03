@@ -41,7 +41,16 @@ namespace App
         float y = cursorY;
         float currentLine = (lastLine - y) / charAdvance.y;
         float maxLine = (lastLine - firstLine) / charAdvance.y;
-        float result = std::round(maxLine - currentLine);
+        float result = maxLine - currentLine;
+        float temp = std::floor(result) - result;
+        if (temp < 0.55)
+        {
+            result = std::floor(result);
+        }
+        else
+        {
+            result = std::ceil(result);
+        }
         return result;
     }
 
@@ -75,7 +84,6 @@ namespace App
             X = mLines[Y].size();
 
         coord = {X, Y};
-        std::cout << X << " : " << Y << std::endl;
         return coord;
     }
 
@@ -193,6 +201,9 @@ namespace App
                     ImVec2 vend;
                     if (start > end)
                     {
+                        if(start > mLines[state.mSelectionEnd.mLine].size()) {
+                            start = mLines[state.mSelectionEnd.mLine].size();
+                        }
                         vstart = ImVec2(CursorPos.x + (end * spaceSize), cursorScreenPos.y + state.mSelectionEnd.mLine * charAdvance.y);
                         vend = ImVec2(CursorPos.x + (start * spaceSize), vstart.y + ImGui::GetFontSize());
                     }
@@ -201,6 +212,7 @@ namespace App
                         vstart = ImVec2(CursorPos.x + (start * spaceSize), cursorScreenPos.y + state.mSelectionEnd.mLine * charAdvance.y);
                         vend = ImVec2(CursorPos.x + (end * spaceSize), vstart.y + ImGui::GetFontSize());
                     }
+                    state.mCursorPosition = state.mSelectionEnd;
                     drawList->AddRectFilled(vstart, vend, ImGui::GetColorU32(ImGuiCol_TextSelectedBg));
                 }
 
@@ -371,7 +383,6 @@ namespace App
         });
 
         //Di Chuột
-        //Chưa biết nên làm gì vì đống dispatch hoạt động trên cả chương trình thay vì trên cửa sổ imgui hiện tại
         dispatch.Dispatch<MouseMovedEvent>([&](MouseMovedEvent e) {
             if (isClicked)
             {
