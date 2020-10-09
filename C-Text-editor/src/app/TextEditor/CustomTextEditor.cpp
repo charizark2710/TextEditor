@@ -193,27 +193,54 @@ namespace App
                 const ImVec2 draw_scroll = ImVec2(scrollX, 0.0f);
 
                 //draw selection
-                if (hasSelection)
+                int startLine = state.mSelectionStart.mLine;
+                int endLine = state.mSelectionEnd.mLine;
+
+                if (hasSelection && ((lineNo >= startLine && lineNo <= endLine) || (lineNo <= startLine && lineNo >= endLine)))
                 {
-                    int start = state.mSelectionStart.mColumn;
-                    int end = state.mSelectionEnd.mColumn;
+                    int startColumn = state.mSelectionStart.mColumn;
+                    int endColumn = state.mSelectionEnd.mColumn;
+
+                    if (startColumn > endColumn)
+                    {
+                        int temp = startColumn;
+                        startColumn = endColumn;
+                        endColumn = temp;
+                    }
+
                     ImVec2 vstart;
                     ImVec2 vend;
-                    if (start > end)
+
+                    if (endLine != startLine && lineNo == startLine)
                     {
-                        if(start > mLines[state.mSelectionEnd.mLine].size()) {
-                            start = mLines[state.mSelectionEnd.mLine].size();
-                        }
-                        vstart = ImVec2(CursorPos.x + (end * spaceSize), cursorScreenPos.y + state.mSelectionEnd.mLine * charAdvance.y);
-                        vend = ImVec2(CursorPos.x + (start * spaceSize), vstart.y + ImGui::GetFontSize());
+                        startColumn = 0;
+                        endColumn = state.mSelectionStart.mColumn;
                     }
-                    else
+                    else if (lineNo != endLine)
                     {
-                        vstart = ImVec2(CursorPos.x + (start * spaceSize), cursorScreenPos.y + state.mSelectionEnd.mLine * charAdvance.y);
-                        vend = ImVec2(CursorPos.x + (end * spaceSize), vstart.y + ImGui::GetFontSize());
+                        startColumn = 0;
+                        endColumn = mLines[lineNo].size();
                     }
-                    state.mCursorPosition = state.mSelectionEnd;
+                    else if (lineNo < startLine)
+                    {
+                        startColumn = state.mCursorPosition.mColumn;
+                        endColumn = mLines[lineNo].size();
+                    }
+                    else if (lineNo > startLine)
+                    {
+                        startColumn = 0;
+                        endColumn = state.mCursorPosition.mColumn;
+                    }
+
+                    if (endColumn > mLines[lineNo].size())
+                    {
+                        endColumn = mLines[lineNo].size();
+                    }
+                    vstart = ImVec2(CursorPos.x + (startColumn * spaceSize), cursorScreenPos.y + lineNo * charAdvance.y);
+                    vend = ImVec2(CursorPos.x + (endColumn * spaceSize), vstart.y + ImGui::GetFontSize());
                     drawList->AddRectFilled(vstart, vend, ImGui::GetColorU32(ImGuiCol_TextSelectedBg));
+
+                    state.mCursorPosition = state.mSelectionEnd;
                 }
 
                 //Render Text
@@ -368,10 +395,20 @@ namespace App
             if (e.GetMouseButton() == GLFW_MOUSE_BUTTON_LEFT)
             {
                 hasSelection = false;
-                isClicked = true;
                 SetCursorPosition(state.mCursorPosition);
+                isClicked = true;
                 state.mSelectionStart.mColumn = state.mCursorPosition.mColumn;
                 state.mSelectionStart.mLine = state.mCursorPosition.mLine;
+
+                //double click
+                static auto before = std::chrono::system_clock::now();
+                auto now = std::chrono::system_clock::now();
+                double diff_ms = std::chrono::duration<double, std::milli>(now - before).count();
+                before = now;
+                if (diff_ms > 10 && diff_ms < 200)
+                {
+                    std::cout << diff_ms << std::endl;
+                }
             }
             return false;
         });

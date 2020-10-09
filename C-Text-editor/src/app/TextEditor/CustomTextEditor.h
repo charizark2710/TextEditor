@@ -133,6 +133,7 @@ namespace App
         int CalculateCurrentIndex(int line);
 
     private:
+        int countClick = 0;
         bool isClicked = false;
         bool hasSelection = false;
         float blink;
