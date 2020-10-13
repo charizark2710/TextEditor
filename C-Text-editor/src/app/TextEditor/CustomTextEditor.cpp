@@ -129,6 +129,53 @@ namespace App
         mLines[state.mCursorPosition.mLine].emplace(mLines[state.mCursorPosition.mLine].begin() + column + 3, ImGui::GetColorU32(ImGuiCol_Text), ' ');
     }
 
+    void CustomTextEditor::Copy()
+    {
+        clipboardString.empty();
+        int startLine = state.mSelectionStart.mLine;
+        int endLine = state.mSelectionEnd.mLine;
+        int startCol = state.mSelectionStart.mColumn;
+        int endCol = state.mSelectionEnd.mColumn;
+        if (startLine > endLine)
+        {
+            std::swap(startLine, endLine);
+            std::swap(startCol, endCol);
+        }
+        for (int line = startLine; line <= endLine; line++)
+        {
+            if (line == startLine && line == endLine)
+            {
+                for (int column = startCol; column < endCol; column++)
+                {
+                    clipboardString.push_back(mLines[line][column].mtext);
+                }
+            }
+            else if (line == startLine)
+            {
+                for (int column = startCol; column < mLines[line].size(); column++)
+                {
+                    clipboardString.push_back(mLines[line][column].mtext);
+                }
+            }
+            else if (line == endLine)
+            {
+                for (int column = 0; column < endCol; column++)
+                {
+                    clipboardString.push_back(mLines[line][column].mtext);
+                }
+            }
+            else
+            {
+                for (int column = 0; column < mLines[line].size(); column++)
+                {
+                    clipboardString.push_back(mLines[line][column].mtext);
+                }
+            }
+            clipboardString.push_back('\n');
+        }
+        glfwSetClipboardString(m_window->GetNativeWindow(), clipboardString.c_str());
+    }
+
     void CustomTextEditor::OnRender(GLFWwindow *window)
     {
         ImGui::Begin((this->GetName()).c_str());
@@ -203,9 +250,7 @@ namespace App
 
                     if (startColumn > endColumn)
                     {
-                        int temp = startColumn;
-                        startColumn = endColumn;
-                        endColumn = temp;
+                        std::swap(startColumn, endColumn);
                     }
 
                     ImVec2 vstart;
@@ -295,9 +340,14 @@ namespace App
 
             const auto temp = *line;
 
+            if (e.getKeyCode() == GLFW_KEY_LEFT_CONTROL || e.getKeyCode() == GLFW_KEY_RIGHT_CONTROL)
+            {
+                isCtrl = true;
+            }
+
             switch (e.getKeyCode())
             {
-            case 257:
+            case GLFW_KEY_ENTER:
             {
                 //Enter
                 Line &newLine = InsertLine(coord.mLine + 1);
@@ -310,14 +360,14 @@ namespace App
                 state.mCursorPosition.mLine++;
                 break;
             }
-            case 258:
+            case GLFW_KEY_TAB:
             {
                 //Tab
                 InsertTab(coord.mColumn);
                 state.mCursorPosition.mColumn += 4;
                 break;
             }
-            case 259:
+            case GLFW_KEY_BACKSPACE:
             {
                 //Backspace
                 if (cline > 0 && column == 0)
@@ -329,7 +379,6 @@ namespace App
                         mLines[cline - 1].insert(mLines[cline - 1].end(), line->begin(), line->end());
                     }
                     mLines.erase(mLines.begin() + cline);
-                    // line->clear();
                 }
 
                 else if (line != nullptr && !line->empty() && column > 0)
@@ -339,7 +388,7 @@ namespace App
                 }
                 break;
             }
-            case 261:
+            case GLFW_KEY_DELETE:
             {
                 //delete
                 if (line != nullptr && !line->empty())
@@ -357,8 +406,37 @@ namespace App
                 }
                 break;
             }
+            case GLFW_KEY_C:
+            {
+                if (isCtrl)
+                {
+                    if (hasSelection)
+                    {
+                        Copy();
+                    }
+                }
+            }
+            case GLFW_KEY_V:
+            {
+                if (isCtrl)
+                {
+                    
+                }
+            }
             default:
                 break;
+            }
+            std::cout << e.getKeyCode() << std::endl;
+            return false;
+        });
+
+        dispatch.Dispatch<KeyReleasedEvent>([&](KeyReleasedEvent e) {
+            if (e.getKeyCode() == GLFW_KEY_LEFT_CONTROL || e.getKeyCode() == GLFW_KEY_RIGHT_CONTROL)
+            {
+                isCtrl = false;
+            }
+            else if (e.getKeyCode() == GLFW_KEY_LEFT_SHIFT || e.getKeyCode() == GLFW_KEY_RIGHT_SHIFT)
+            {
             }
             return false;
         });

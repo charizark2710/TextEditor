@@ -126,6 +126,7 @@ namespace App
         void SetUp();
         int GetTextIndex(Coord c);
         void setSelection();
+        void Copy();
         //Vị trí của con trỏ nhưng với tọa độ đầy đủ
         void SetCursorPosition(Coord &c);
         Coord GetCurrentCursor();
@@ -136,6 +137,7 @@ namespace App
         int countClick = 0;
         bool isClicked = false;
         bool hasSelection = false;
+        bool isCtrl = false;
         float blink;
         typedef std::vector<TextCustom> Line;
         typedef std::vector<Line> Lines;
@@ -151,7 +153,7 @@ namespace App
         ImVec2 CursorPos;
         //Vị trí của cửa sổ
         ImVec2 cursorScreenPos;
-
+        std::string clipboardString;
     public:
         Line &InsertLine(int line);
         void InsertTab(int line);
