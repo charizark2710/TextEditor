@@ -126,7 +126,9 @@ namespace App
         void SetUp();
         int GetTextIndex(Coord c);
         void setSelection();
+        //Copy Paste
         void Copy();
+        void Paste();
         //Vị trí của con trỏ nhưng với tọa độ đầy đủ
         void SetCursorPosition(Coord &c);
         Coord GetCurrentCursor();
@@ -154,6 +156,7 @@ namespace App
         //Vị trí của cửa sổ
         ImVec2 cursorScreenPos;
         std::string clipboardString;
+
     public:
         Line &InsertLine(int line);
         void InsertTab(int line);

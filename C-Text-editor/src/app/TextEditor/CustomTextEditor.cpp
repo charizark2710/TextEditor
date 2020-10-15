@@ -226,6 +226,8 @@ namespace App
         ImGuiIO &io = ImGui::GetIO();
         ImVec2 textScreenPos;
         Coord currentCur = state.mCursorPosition;
+        int startLine = state.mSelectionStart.mLine;
+        int endLine = state.mSelectionEnd.mLine;
         if (!mLines.empty())
         {
             float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
@@ -240,9 +242,6 @@ namespace App
                 const ImVec2 draw_scroll = ImVec2(scrollX, 0.0f);
 
                 //draw selection
-                int startLine = state.mSelectionStart.mLine;
-                int endLine = state.mSelectionEnd.mLine;
-
                 if (hasSelection && ((lineNo >= startLine && lineNo <= endLine) || (lineNo <= startLine && lineNo >= endLine)))
                 {
                     int startColumn = state.mSelectionStart.mColumn;
@@ -255,17 +254,28 @@ namespace App
 
                     ImVec2 vstart;
                     ImVec2 vend;
-
+                    // Phương pháp là vẽ từng dòng khi chạy vòng while theo dòng bắt đầu và kết thúc
+                    // Đoạn này để xác định nên bôi chỗ nào khi con trỏ kéo khỏi dòng ban đầu
                     if (endLine != startLine && lineNo == startLine)
                     {
-                        startColumn = 0;
-                        endColumn = state.mSelectionStart.mColumn;
+                        if (endLine < startLine)
+                        {
+                            startColumn = 0;
+                            endColumn = state.mSelectionStart.mColumn;
+                        }
+                        else
+                        {
+                            startColumn = state.mSelectionStart.mColumn;
+                            endColumn = mLines[lineNo].size();
+                        }
                     }
+                    // bôi đen toàn bộ những dòng trong khoảng từ dòng đầu đến dòng cuối
                     else if (lineNo != endLine)
                     {
                         startColumn = 0;
                         endColumn = mLines[lineNo].size();
                     }
+                    // Xác định nên bôi thế nào tại dòng hiện tại (dòng cuối)
                     else if (lineNo < startLine)
                     {
                         startColumn = state.mCursorPosition.mColumn;
@@ -420,7 +430,7 @@ namespace App
             {
                 if (isCtrl)
                 {
-                    
+                    // Paste();
                 }
             }
             default:
@@ -462,6 +472,18 @@ namespace App
                 for (char *c = buf; *c != '\0'; c++, ++index)
                 {
                     line.emplace(line.begin() + index, ImGui::GetColorU32(ImGuiCol_Text), *c);
+                    if (*c == '(' || *c == '{' || *c == '[')
+                    {
+                        if (*c == '(')
+                        {
+                            line.emplace(line.begin() + index + 1, line[index - 1].mcolor, ')');
+                        }
+                        else
+                        {
+                            int temp = (int)*c;
+                            line.emplace(line.begin() + index + 1, line[index - 1].mcolor, (char)(temp + 2));
+                        }
+                    }
                 }
                 state.mCursorPosition.mColumn++;
             }
