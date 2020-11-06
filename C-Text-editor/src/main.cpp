@@ -53,6 +53,19 @@ int main(int argc, char *argv[])
 
     GLFWwindow *window = m_window->GetNativeWindow();
 
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void)io;
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
     App::LayerStack layerStack;
 
     layerStack.PushOverlay(m_ImGuiLayer);
@@ -85,31 +98,43 @@ int main(int argc, char *argv[])
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
         for (App::Layer *layer : layerStack)
         {
             layer->OnUpdate();
         }
 
-        if (currentTest)
-        {
-            currentTest->onUpdate(0.0f);
-            currentTest->onRender();
-            currentTest->onImGuiRender(show_demo_window);
-            if (currentTest != testMenu && ImGui::Button("<-"))
-            {
-                delete currentTest;
-                currentTest = testMenu;
-                glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-            }
-        }
+        // if (currentTest)
+        // {
+        //     currentTest->onUpdate(0.0f);
+        //     currentTest->onRender();
+        //     currentTest->onImGuiRender(show_demo_window);
+        //     if (currentTest != testMenu && ImGui::Button("<-"))
+        //     {
+        //         delete currentTest;
+        //         currentTest = testMenu;
+        //         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        //     }
+        // }
 
-        t->Render("Text");
+        // t->Render("Text");
 
         // Rendering
         for (App::Layer *layer : layerStack)
         {
             layer->OnRender(window);
         }
+
+        ImGui::Render();
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        // glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        // glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         m_window->OnUpdate();
     }

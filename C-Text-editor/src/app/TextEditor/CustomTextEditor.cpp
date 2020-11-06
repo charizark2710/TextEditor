@@ -183,6 +183,9 @@ namespace App
         cursorScreenPos = ImGui::GetCursorScreenPos();
         ImGuiIO &io = ImGui::GetIO();
         io.ConfigWindowsMoveFromTitleBarOnly = true;
+        // ImFont *currentFont = ImGui::GetFont();
+        // currentFont->FontSize = textSize;
+        // ImGui::SetCurrentFont(currentFont);
         if (ImGui::IsWindowFocused())
         {
             if (ImGui::IsWindowHovered())
@@ -213,7 +216,8 @@ namespace App
 
     void CustomTextEditor::SetUp()
     {
-        const float fontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x;
+        ImGuiIO &io = ImGui::GetIO();
+        const float fontSize = ImGui::GetFont()->CalcTextSizeA(textSize, FLT_MAX, -1.0f, "#", nullptr, nullptr).x;
         charAdvance = ImVec2(fontSize, ImGui::GetTextLineHeightWithSpacing() * 1.0f);
         auto contentSize = ImGui::GetWindowContentRegionMax();
         auto drawList = ImGui::GetWindowDrawList();
@@ -223,14 +227,13 @@ namespace App
         auto globalLineMax = (int)mLines.size();
         auto lineMax = std::max(0, std::min((int)mLines.size() - 1, lineNo + (int)floor((scrollY + contentSize.y) / charAdvance.y)));
         ImVec2 cursor_offset;
-        ImGuiIO &io = ImGui::GetIO();
         ImVec2 textScreenPos;
         Coord currentCur = state.mCursorPosition;
         int startLine = state.mSelectionStart.mLine;
         int endLine = state.mSelectionEnd.mLine;
         if (!mLines.empty())
         {
-            float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
+            float spaceSize = ImGui::GetFont()->CalcTextSizeA(textSize, FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
             while (lineNo <= lineMax)
             {
                 ImVec2 lineStartScreenPos = ImVec2(cursorScreenPos.x, cursorScreenPos.y + lineNo * charAdvance.y);
@@ -309,7 +312,8 @@ namespace App
                 if (!mLineBuffer.empty())
                 {
                     const ImVec2 newOffset(textScreenPos.x + bufferOffset.x, textScreenPos.y + bufferOffset.y);
-                    drawList->AddText(newOffset, ImGui::GetColorU32(ImGuiCol_Text), mLineBuffer.c_str());
+                    auto font = ImGui::GetCurrentContext()->Font;
+                    drawList->AddText(font, textSize, newOffset, ImGui::GetColorU32(ImGuiCol_Text), mLineBuffer.c_str());
                     mLineBuffer.clear();
                 }
                 lineNo++;
@@ -324,16 +328,12 @@ namespace App
                 {
                     ImVec2 cstart(CursorPos.x + (currentCur.mColumn * spaceSize), cursorScreenPos.y + currentCur.mLine * charAdvance.y);
                     cursor = cstart;
-                    ImVec2 cend(cstart.x, cstart.y + ImGui::GetFontSize());
+                    ImVec2 cend(cstart.x, cstart.y + textSize);
                     ImRect rectCursor(cstart, cend);
                     drawList->AddLine(rectCursor.Min, rectCursor.Max, ImGui::GetColorU32(ImGuiCol_Text));
                 }
             }
         }
-    }
-
-    void CustomTextEditor::OnUpdate()
-    {
     }
 
     void CustomTextEditor::OnEvent(Event &event)
@@ -361,7 +361,7 @@ namespace App
             {
                 //Enter
                 Line &newLine = InsertLine(coord.mLine + 1);
-                if (temp[column].mtext)
+                if (!line->empty())
                 {
                     newLine.insert(newLine.begin(), temp.begin() + column, temp.end());
                     mLines[coord.mLine].erase(mLines[coord.mLine].begin() + column, mLines[coord.mLine].end());
@@ -436,7 +436,6 @@ namespace App
             default:
                 break;
             }
-            std::cout << e.getKeyCode() << std::endl;
             return false;
         });
 
@@ -529,12 +528,21 @@ namespace App
         });
     }
 
+    void CustomTextEditor::OnUpdate()
+    {
+    }
+
     void CustomTextEditor::OnAttatch()
     {
         m_window = &Window::Get();
         mLines.push_back(Line());
     }
 
-    void CustomTextEditor::OnDetatch() {}
+    void CustomTextEditor::OnDetatch()
+    {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+    }
 
 } // namespace App

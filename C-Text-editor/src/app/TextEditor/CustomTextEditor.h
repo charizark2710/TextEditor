@@ -6,6 +6,8 @@
 #include <vector>
 #include <imgui.h>
 
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 namespace App
 {
     class CustomTextEditor : public Layer
@@ -156,6 +158,7 @@ namespace App
         //Vị trí của cửa sổ
         ImVec2 cursorScreenPos;
         std::string clipboardString;
+        float textSize = 22.0f;
 
     public:
         Line &InsertLine(int line);
