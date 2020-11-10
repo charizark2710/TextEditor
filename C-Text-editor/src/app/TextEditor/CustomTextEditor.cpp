@@ -62,9 +62,10 @@ namespace App
         float lineEnd = cursorScreenPos.x + (charAdvance.x * lineContent.size());
         // float x = cursorX > lineEnd ? lineEnd : cursorX;
         float x = cursorX;
-        float currentIndex = (lineEnd - x) / charAdvance.x;
-        float thisLine = (lineEnd - lineStart) / charAdvance.x;
-        float result = std::round(thisLine - currentIndex);
+        float leftIndex = (lineEnd - x) / charAdvance.x;
+        float rightIndex = (lineEnd - lineStart) / charAdvance.x;
+        float result = std::round(rightIndex - leftIndex);
+        std::cout << result << std::endl;
         return result;
     }
 
@@ -181,11 +182,10 @@ namespace App
         ImGui::Begin((this->GetName()).c_str());
         ImGui::BeginChild("XXX");
         cursorScreenPos = ImGui::GetCursorScreenPos();
+        int diffSize = textSize - (cursorScreenPos.x - cursorScreenPos.y);
+        cursorScreenPos.y = cursorScreenPos.y + diffSize;
         ImGuiIO &io = ImGui::GetIO();
         io.ConfigWindowsMoveFromTitleBarOnly = true;
-        // ImFont *currentFont = ImGui::GetFont();
-        // currentFont->FontSize = textSize;
-        // ImGui::SetCurrentFont(currentFont);
         if (ImGui::IsWindowFocused())
         {
             if (ImGui::IsWindowHovered())
@@ -218,7 +218,7 @@ namespace App
     {
         ImGuiIO &io = ImGui::GetIO();
         const float fontSize = ImGui::GetFont()->CalcTextSizeA(textSize, FLT_MAX, -1.0f, "#", nullptr, nullptr).x;
-        charAdvance = ImVec2(fontSize, ImGui::GetTextLineHeightWithSpacing() * 1.0f);
+        charAdvance = ImVec2(fontSize, (textSize + ImGui::GetCurrentContext()->Style.ItemSpacing.y) * 1.0f);
         auto contentSize = ImGui::GetWindowContentRegionMax();
         auto drawList = ImGui::GetWindowDrawList();
         auto scrollX = ImGui::GetScrollX();
@@ -295,7 +295,7 @@ namespace App
                         endColumn = mLines[lineNo].size();
                     }
                     vstart = ImVec2(CursorPos.x + (startColumn * spaceSize), cursorScreenPos.y + lineNo * charAdvance.y);
-                    vend = ImVec2(CursorPos.x + (endColumn * spaceSize), vstart.y + ImGui::GetFontSize());
+                    vend = ImVec2(CursorPos.x + (endColumn * spaceSize), vstart.y + charAdvance.y);
                     drawList->AddRectFilled(vstart, vend, ImGui::GetColorU32(ImGuiCol_TextSelectedBg));
 
                     state.mCursorPosition = state.mSelectionEnd;
