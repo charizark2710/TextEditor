@@ -65,7 +65,6 @@ namespace App
         float leftIndex = (lineEnd - x) / charAdvance.x;
         float rightIndex = (lineEnd - lineStart) / charAdvance.x;
         float result = std::round(rightIndex - leftIndex);
-        std::cout << result << std::endl;
         return result;
     }
 
@@ -113,7 +112,36 @@ namespace App
 
     void CustomTextEditor::DeleteChar(CustomTextEditor::Line &line, int index)
     {
-        line.erase(line.begin() + index - 1);
+        if (hasSelection)
+        {
+            int lineEnd = state.mSelectionEnd.mLine;
+            int lineStart = state.mSelectionStart.mLine;
+            int cStart = state.mSelectionStart.mColumn;
+            int cEnd = state.mSelectionEnd.mColumn;
+            if (lineStart != lineEnd)
+            {
+                if (lineEnd < lineStart)
+                {
+                    std::swap(cStart, cEnd);
+                    std::swap(lineEnd, lineStart);
+                }
+                line.erase(line.begin() + cStart, line.end());
+                mLines[lineEnd].erase(mLines[lineEnd].begin(), mLines[lineEnd].begin() + cEnd);
+                mLines.erase(mLines.begin() + lineStart + 1, mLines.begin() + lineEnd);
+            }
+            else
+            {
+                if (cStart > cEnd)
+                {
+                    std::swap(cStart, cEnd);
+                }
+                line.erase(line.begin() + cStart, line.begin() + cEnd);
+            }
+        }
+        else
+        {
+            line.erase(line.begin() + index - 1);
+        }
     }
 
     CustomTextEditor::Line &CustomTextEditor::InsertLine(int line)
@@ -175,6 +203,40 @@ namespace App
             clipboardString.push_back('\n');
         }
         glfwSetClipboardString(m_window->GetNativeWindow(), clipboardString.c_str());
+    }
+
+    void CustomTextEditor::Paste()
+    {
+        std::string text = glfwGetClipboardString(m_window->GetNativeWindow());
+        const char *c = text.c_str();
+        if (!text.empty())
+        {
+            while (*c != '\0')
+            {
+                if (*c == '\n')
+                {
+                    InsertLine(state.mCursorPosition.mLine + 1);
+                    state.mCursorPosition.mLine++;
+                }
+                else if (*c == '\r')
+                {
+                    state.mCursorPosition.mColumn = 0;
+                }
+                else if (*c == '\t')
+                {
+                    InsertTab(state.mCursorPosition.mColumn);
+                    state.mCursorPosition.mColumn += 4;
+                }
+                else
+                {
+                    auto line = &mLines[state.mCursorPosition.mLine];
+                    auto index = GetTextIndex(state.mCursorPosition);
+                    line->emplace(line->begin() + index, ImGui::GetColorU32(ImGuiCol_Text), *c);
+                    state.mCursorPosition.mColumn++;
+                }
+                c++;
+            }
+        }
     }
 
     void CustomTextEditor::OnRender(GLFWwindow *window)
@@ -394,7 +456,8 @@ namespace App
                 else if (line != nullptr && !line->empty() && column > 0)
                 {
                     DeleteChar(*line, column);
-                    state.mCursorPosition.mColumn--;
+                    hasSelection == false ? state.mCursorPosition.mColumn-- : state.mCursorPosition.mColumn;
+                    hasSelection = false;
                 }
                 break;
             }
@@ -406,6 +469,7 @@ namespace App
                     if (temp[column].mtext)
                     {
                         DeleteChar(*line, column + 1);
+                        hasSelection = false;
                     }
                 }
 
@@ -425,13 +489,24 @@ namespace App
                         Copy();
                     }
                 }
+                break;
             }
             case GLFW_KEY_V:
             {
                 if (isCtrl)
                 {
-                    // Paste();
+                    Paste();
                 }
+                break;
+            }
+            case GLFW_KEY_LEFT:
+            {
+                state.mCursorPosition.mColumn > 0 ? state.mCursorPosition.mColumn-- : state.mCursorPosition.mColumn;
+                break;
+            }
+            case GLFW_KEY_RIGHT:
+            {
+                state.mCursorPosition.mColumn < line->size() - 1 ? state.mCursorPosition.mColumn++ : state.mCursorPosition.mColumn;
             }
             default:
                 break;

@@ -163,6 +163,6 @@ namespace App
     public:
         Line &InsertLine(int line);
         void InsertTab(int line);
-        void DeleteChar(Line &line, int index);
+        void DeleteChar(Line &line, int index = 0);
     };
 } // namespace App
