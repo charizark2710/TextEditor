@@ -160,7 +160,7 @@ namespace App
 
     void CustomTextEditor::Copy()
     {
-        clipboardString.empty();
+        clipboardString.clear();
         int startLine = state.mSelectionStart.mLine;
         int endLine = state.mSelectionEnd.mLine;
         int startCol = state.mSelectionStart.mColumn;
@@ -217,6 +217,7 @@ namespace App
                 {
                     InsertLine(state.mCursorPosition.mLine + 1);
                     state.mCursorPosition.mLine++;
+                    state.mCursorPosition.mColumn = 0;
                 }
                 else if (*c == '\r')
                 {
@@ -501,12 +502,39 @@ namespace App
             }
             case GLFW_KEY_LEFT:
             {
-                state.mCursorPosition.mColumn > 0 ? state.mCursorPosition.mColumn-- : state.mCursorPosition.mColumn;
+                if (column > 0)
+                {
+                    state.mCursorPosition.mColumn--;
+                }
+                else
+                {
+                    if (cline - 1 >= 0)
+                        state.mCursorPosition.mColumn = mLines[--state.mCursorPosition.mLine].size();
+                }
                 break;
             }
             case GLFW_KEY_RIGHT:
             {
-                state.mCursorPosition.mColumn < line->size() - 1 ? state.mCursorPosition.mColumn++ : state.mCursorPosition.mColumn;
+                if (column < line->size())
+                {
+                    state.mCursorPosition.mColumn++;
+                }
+                else
+                {
+                    if (cline + 1 <= mLines.size() - 1)
+                    {
+                        state.mCursorPosition.mColumn = 0;
+                        state.mCursorPosition.mLine++;
+                    }
+                }
+            }
+            case GLFW_KEY_DOWN:
+            {
+                break;
+            }
+            case GLFW_KEY_UP:
+            {
+                break;
             }
             default:
                 break;
