@@ -41,7 +41,7 @@
         {
             "type": "shell",
             "label": "run",
-            "command": "cd ${workspaceFolder}\\bin && ${workspaceFolderBasename}.exe",
+            "command": "cd '${workspaceFolder}\\bin' ;; .\/${workspaceFolderBasename}.exe",
             "dependsOn": [
                 "build"
             ],

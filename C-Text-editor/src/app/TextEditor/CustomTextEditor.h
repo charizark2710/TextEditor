@@ -136,6 +136,7 @@ namespace App
         Coord GetCurrentCursor();
         int CalculateCurrentLine();
         int CalculateCurrentIndex(int line);
+        void ScrollVisible();
 
     private:
         int countClick = 0;

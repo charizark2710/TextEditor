@@ -42,6 +42,10 @@ namespace App
         float currentLine = (lastLine - y) / charAdvance.y;
         float maxLine = (lastLine - firstLine) / charAdvance.y;
         float result = maxLine - currentLine;
+        if (result < 0)
+        {
+            return 0;
+        }
         float temp = std::floor(result) - result;
         if (temp < 0.55)
         {
@@ -66,6 +70,31 @@ namespace App
         float rightIndex = (lineEnd - lineStart) / charAdvance.x;
         float result = std::round(rightIndex - leftIndex);
         return result;
+    }
+
+    void CustomTextEditor::ScrollVisible()
+    {
+        float scrollX = ImGui::GetScrollX();
+        float scrollY = ImGui::GetScrollY();
+
+        float height = ImGui::GetWindowHeight();
+        float width = ImGui::GetWindowWidth();
+
+        float top = 1 + (int)ceil(scrollY / charAdvance.y);
+        float bottom = (int)ceil((scrollY + height) / charAdvance.y);
+
+        float left = (int)ceil(scrollX / charAdvance.x);
+        float right = (int)ceil((scrollX + width) / charAdvance.x);
+
+        float line = CalculateCurrentLine();
+        float index = CalculateCurrentIndex(line);
+
+        // if (line < top)
+        // {
+        //     ImGuiWindow *window = ImGui::GetCurrentWindow();
+        //     window->ScrollTarget.y = std::max(0.0f, (line - 1) * charAdvance.y);
+        // }
+        std::cout << ImGui::GetScrollX() << std::endl;
     }
 
     //Lụm số dòng và số cột khi có click chuột
@@ -243,10 +272,8 @@ namespace App
     void CustomTextEditor::OnRender(GLFWwindow *window)
     {
         ImGui::Begin((this->GetName()).c_str());
-        ImGui::BeginChild("XXX");
+        ImGui::BeginChild("XXX", ImVec2(ImGui::GetWindowContentRegionWidth() * 0.5f, 260), false, ImGuiWindowFlags_HorizontalScrollbar);
         cursorScreenPos = ImGui::GetCursorScreenPos();
-        int diffSize = textSize - (cursorScreenPos.x - cursorScreenPos.y);
-        cursorScreenPos.y = cursorScreenPos.y + diffSize;
         ImGuiIO &io = ImGui::GetIO();
         io.ConfigWindowsMoveFromTitleBarOnly = true;
         if (ImGui::IsWindowFocused())
@@ -294,6 +321,7 @@ namespace App
         Coord currentCur = state.mCursorPosition;
         int startLine = state.mSelectionStart.mLine;
         int endLine = state.mSelectionEnd.mLine;
+        ScrollVisible();
         if (!mLines.empty())
         {
             float spaceSize = ImGui::GetFont()->CalcTextSizeA(textSize, FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
@@ -379,22 +407,23 @@ namespace App
                     drawList->AddText(font, textSize, newOffset, ImGui::GetColorU32(ImGuiCol_Text), mLineBuffer.c_str());
                     mLineBuffer.clear();
                 }
-                lineNo++;
-            }
-            CursorPos = textScreenPos;
-            // draw cursor
-            if (ImGui::IsWindowFocused())
-            {
-                blink += io.DeltaTime;
-                bool cursor_is_visible = (!io.ConfigInputTextCursorBlink) || (blink <= 0.0f) || fmodf(blink, 1.20f) <= 0.80f;
-                if (cursor_is_visible)
+
+                CursorPos = textScreenPos;
+                // draw cursor
+                if (ImGui::IsWindowFocused())
                 {
-                    ImVec2 cstart(CursorPos.x + (currentCur.mColumn * spaceSize), cursorScreenPos.y + currentCur.mLine * charAdvance.y);
-                    cursor = cstart;
-                    ImVec2 cend(cstart.x, cstart.y + textSize);
-                    ImRect rectCursor(cstart, cend);
-                    drawList->AddLine(rectCursor.Min, rectCursor.Max, ImGui::GetColorU32(ImGuiCol_Text));
+                    blink += io.DeltaTime;
+                    bool cursor_is_visible = (!io.ConfigInputTextCursorBlink) || (blink <= 0.0f) || fmodf(blink, 1.20f) <= 0.80f;
+                    if (cursor_is_visible)
+                    {
+                        ImVec2 cstart(CursorPos.x + (currentCur.mColumn * spaceSize), cursorScreenPos.y + currentCur.mLine * charAdvance.y);
+                        cursor = cstart;
+                        ImVec2 cend(cstart.x, cstart.y + textSize);
+                        ImRect rectCursor(cstart, cend);
+                        drawList->AddLine(rectCursor.Min, rectCursor.Max, ImGui::GetColorU32(ImGuiCol_Text));
+                    }
                 }
+                lineNo++;
             }
         }
     }
@@ -462,9 +491,19 @@ namespace App
                 }
                 break;
             }
+            //delete
             case GLFW_KEY_DELETE:
             {
-                //delete
+                if (temp.empty())
+                {
+                    if (mLines.size() - 1 > cline)
+                    {
+                        mLines[cline].insert(mLines[cline].end(), mLines[cline + 1].begin(), mLines[cline + 1].end());
+                        mLines.erase(mLines.begin() + cline + 1);
+                    }
+                    break;
+                }
+
                 if (line != nullptr && !line->empty())
                 {
                     if (temp[column].mtext)
@@ -527,6 +566,7 @@ namespace App
                         state.mCursorPosition.mLine++;
                     }
                 }
+                break;
             }
             case GLFW_KEY_DOWN:
             {
